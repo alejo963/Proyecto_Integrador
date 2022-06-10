@@ -43,7 +43,7 @@ model_artifacts = f"s3://{default_bucket}/logit_clf_model.tar.gz"
 response = s3.meta.client.upload_file('logit_clf_model.tar.gz', default_bucket, 'logit_clf_model.tar.gz')
 
 #Step 1: Model Creation
-model_name = "sklearn-logit-clf" + strftime("%Y-%m-%d-%H-%M-%S", gmtime())
+model_name = "sklearn-logit-clf"
 print("Model name: " + model_name)
 create_model_response = client.create_model(
     ModelName=model_name,
@@ -62,7 +62,7 @@ print("Model Arn: " + create_model_response["ModelArn"])
 
 
 #Step 2: EPC Creation
-sklearn_epc_name = "sklearn-logit-epc" + strftime("%Y-%m-%d-%H-%M-%S", gmtime())
+sklearn_epc_name = "sklearn-logit-epc"
 endpoint_config_response = client.create_endpoint_config(
     EndpointConfigName=sklearn_epc_name,
     ProductionVariants=[
@@ -78,7 +78,7 @@ print("Endpoint Configuration Arn: " + endpoint_config_response["EndpointConfigA
 
 
 #Step 3: EP Creation
-endpoint_name = "sklearn-logit-local-ep" + strftime("%Y-%m-%d-%H-%M-%S", gmtime())
+endpoint_name = "sklearn-logit-local-ep"
 create_endpoint_response = client.create_endpoint(
     EndpointName=endpoint_name,
     EndpointConfigName=sklearn_epc_name,
