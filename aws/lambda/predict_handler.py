@@ -19,6 +19,8 @@ def extract_datasets(path_to_zip_file):
 
     csvFiles = [
         f'/tmp/{file}' for file in listdir('/tmp') if file.endswith('.csv')]
+    if len(csvFiles) != 2:
+        return None, True
     df1 = pd.read_csv(csvFiles[0])
     df2 = pd.read_csv(csvFiles[1])
 
@@ -31,7 +33,7 @@ def extract_datasets(path_to_zip_file):
     df = df[cols_to_preserve]
     df.dropna(axis=0, inplace=True)
     df.reset_index(drop=True, inplace=True)
-    return df
+    return df, False
 
 
 def getNumericVariables(df):
@@ -156,7 +158,13 @@ def lambda_handler(event, context):
     path_to_zip_file = '/tmp/archive.zip'
     bucket.download_file(key, path_to_zip_file)
 
-    raw_df = extract_datasets(path_to_zip_file)
+    raw_df, error = extract_datasets(path_to_zip_file)
+
+    if error:
+        return {
+            'statusCode': 400,
+            'message': 'Zip file must contain just two CSV files'
+        }
 
     num_df = getNumericVariables(raw_df)
 

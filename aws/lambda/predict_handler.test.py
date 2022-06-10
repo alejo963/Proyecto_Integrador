@@ -38,9 +38,15 @@ class TestMetricsDataHandler(unittest.TestCase):
         except FileExistsError:
             pass
 
+    def test_reject_bad_zip(self):
+        path_to_zip_file = './bad_test.zip'
+        _df, error = predict_handler.extract_datasets(path_to_zip_file)
+        self.assertTrue(error)
+
     def test_process_file(self):
         path_to_zip_file = "./test.zip"
-        df = predict_handler.extract_datasets(path_to_zip_file)
+        df, error = predict_handler.extract_datasets(path_to_zip_file)
+        self.assertFalse(error)
         self.assertTrue(((df.columns == cols_to_preserve).all()))
 
         num_df = predict_handler.getNumericVariables(df)
