@@ -14,7 +14,7 @@ base_dir = os.getcwd()
 # otherwise the zip will include subfolders for all folders between your current working directory
 # and the directory you want to zip
 
-os.chdir('./aws/layers/joblib')
-zipf = zipfile.ZipFile('./joblib_lambda.zip', 'w', zipfile.ZIP_DEFLATED)
+os.chdir('./aws/layers/pandas')
+zipf = zipfile.ZipFile('./pandas_lambda.zip', 'w', zipfile.ZIP_DEFLATED)
 zipdir('python/', zipf)
 zipf.close()
