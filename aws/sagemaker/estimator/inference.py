@@ -1,6 +1,7 @@
 import joblib
 import os
 import json
+import numpy as np
 
 """
 Deserialize fitted model
@@ -15,12 +16,12 @@ input_fn
     request_content_type: (string) specifies the format/variable type of the request
 """
 def input_fn(request_body, request_content_type):
-    if request_content_type == 'text/csv':
+    if request_content_type == 'application/json':
         request_body = json.loads(request_body)
         inpVar = request_body['Input']
         return inpVar
     else:
-        raise ValueError("This model only supports text/csv input")
+        raise ValueError("This model only supports application/json input")
 
 """
 predict_fn
@@ -28,7 +29,7 @@ predict_fn
     model (sklearn model) returned model loaded from model_fn above
 """
 def predict_fn(input_data, model):
-    return model.predict(input_data)
+    return model.predict(np.array(input_data))
 
 """
 output_fn

@@ -56,7 +56,6 @@ class TestMetricsDataHandler(unittest.TestCase):
         full_df = pd.concat([num_df, cat_df], axis=1)
 
         refined_df = predict_handler.dropCorrelatedVariables(full_df)
-        print(refined_df)
         self.assertTrue(((refined_df.columns == final_cols).all()))
 
     @classmethod

@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 import zipfile
 from os import listdir
-sagemakerRuntime = boto3.client('runtime.sagemaker')
-s3 = boto3.resource('s3')
+from time import time
+
+SCALER_ENDPOINT_NAME = "sklearn-scaler-local-ep"
+ESTIMATOR_ENDPOINT_NAME = "sklearn-logit-local-ep"
 
 
 def extract_datasets(path_to_zip_file):
@@ -151,7 +153,10 @@ def dropCorrelatedVariables(df):
 
 
 def lambda_handler(event, context):
-    print(event)
+    unique_id = int(time())
+    sagemakerRuntime = boto3.client('runtime.sagemaker')
+    s3 = boto3.resource('s3')
+
     # Download zipfile with csv
     key = event['Records'][0]['s3']['object']['key']
     bucket = s3.Bucket('detechito-datalake')
@@ -167,18 +172,38 @@ def lambda_handler(event, context):
         }
 
     num_df = getNumericVariables(raw_df)
-
+    scaler_payload = {"Input": json.dumps(num_df.to_numpy().tolist())}
     # Scaling through SageMaker
-    response = sagemakerRuntime.invoke_endpoint(EndpointName=ENDPOINT_NAME,
-                                                ContentType='text/csv',
-                                                Body=payload)
+    scaler_response = sagemakerRuntime.invoke_endpoint(EndpointName=SCALER_ENDPOINT_NAME,
+                                                       ContentType='application/json',
+                                                       Body=scaler_payload)
+
+    scaler_result = json.loads(
+        scaler_response['Body'].read().decode())['Output']
+    scaled_num_df = pd.DataFrame(
+        np.array(scaler_result), columns=num_df.columns)
+
     cat_df = getCategoricVariables(raw_df)
 
-    full_df = pd.concat([num_df, cat_df], axis=1)
+    full_df = pd.concat([scaled_num_df, cat_df], axis=1)
 
     refined_df = dropCorrelatedVariables(full_df)
 
+    estimator_payload = {"Input": json.dumps(refined_df.to_numpy().toList())}
+    # Get predictions
+    estimator_response = sagemakerRuntime.invoke_endpoint(EndpointName=ESTIMATOR_ENDPOINT_NAME,
+                                                          ContentType='application/json',
+                                                          Body=estimator_payload)
+
+    estimator_result = json.loads(
+        estimator_response['Body'].read().decode())['Output']
+
+    predictions = pd.concat(
+        [raw_df['TransactionID'], pd.DataFrame(estimator_result)], axis=1)
+
+    predictions.to_csv(f'/tmp/{unique_id}predictions.csv')
+
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('Predictions saved in bucket')
     }

@@ -2,6 +2,8 @@ data/
 
 __pycache__
 
+*.tar.gz
+
 aws/layers/*/python/lib/python3.8/site-packages/*
 
 !aws/layers/*/python/lib/python3.8/site-packages/keep_file_structure.txt

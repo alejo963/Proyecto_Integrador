@@ -15,7 +15,7 @@ sagemaker_session = sagemaker.Session()
 role = "arn:aws:iam::103583486597:role/LabRole"
 
 #Build tar file with model data + inference code
-bashCommand = "tar -cvpzf scaler.tar.gz model.joblib inference.py"
+bashCommand = "tar -cvpzf logit_clf_model.tar.gz model.joblib inference.py"
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
 output, error = process.communicate()
 
@@ -33,11 +33,11 @@ default_bucket = sagemaker_session.default_bucket()
 print(default_bucket)
 
 #Upload tar.gz to bucket
-model_artifacts = f"s3://{default_bucket}/scaler.tar.gz"
-response = s3.meta.client.upload_file('scaler.tar.gz', default_bucket, 'scaler.tar.gz')
+model_artifacts = f"s3://{default_bucket}/logit_clf_model.tar.gz"
+response = s3.meta.client.upload_file('logit_clf_model.tar.gz', default_bucket, 'logit_clf_model.tar.gz')
 
 #Step 1: Model Creation
-model_name = "sklearn-scaler"
+model_name = "sklearn-logit-clf"
 print("Model name: " + model_name)
 create_model_response = client.create_model(
     ModelName=model_name,
@@ -56,7 +56,7 @@ print("Model Arn: " + create_model_response["ModelArn"])
 
 
 #Step 2: EPC Creation
-sklearn_epc_name = "sklearn-scaler-epc"
+sklearn_epc_name = "sklearn-logit-epc"
 endpoint_config_response = client.create_endpoint_config(
     EndpointConfigName=sklearn_epc_name,
     ProductionVariants=[
@@ -72,7 +72,7 @@ print("Endpoint Configuration Arn: " + endpoint_config_response["EndpointConfigA
 
 
 #Step 3: EP Creation
-endpoint_name = "sklearn-scaler-local-ep"
+endpoint_name = "sklearn-logit-local-ep"
 create_endpoint_response = client.create_endpoint(
     EndpointName=endpoint_name,
     EndpointConfigName=sklearn_epc_name,
