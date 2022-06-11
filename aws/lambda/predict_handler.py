@@ -3,7 +3,6 @@ import boto3
 import pandas as pd
 import numpy as np
 import zipfile
-from os import listdir
 from time import time
 
 SCALER_ENDPOINT_NAME = "sklearn-scaler-local-ep"
