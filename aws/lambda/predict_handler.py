@@ -1,5 +1,4 @@
 import json
-from tkinter.tix import InputOnly
 import boto3
 import pandas as pd
 import numpy as np
@@ -17,14 +16,14 @@ def extract_datasets(path_to_zip_file):
     """
     # Extract CSV files and save in DataFrames
     with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
+        csv_files = zip_ref.namelist()
+        if len(csv_files) != 2:
+            return None, True
         zip_ref.extractall('/tmp/')
 
-    csvFiles = [
-        f'/tmp/{file}' for file in listdir('/tmp') if file.endswith('.csv')]
-    if len(csvFiles) != 2:
-        return None, True
-    df1 = pd.read_csv(csvFiles[0])
-    df2 = pd.read_csv(csvFiles[1])
+
+    df1 = pd.read_csv(f'/tmp/{csv_files[0]}')
+    df2 = pd.read_csv(f'/tmp/{csv_files[1]}')
 
     # Merge dataframes
     df = pd.merge(df1, df2, how='inner', on='TransactionID')
@@ -45,7 +44,6 @@ def getNumericVariables(df):
     # Get numeric variables
     numeric_df = df.select_dtypes('number').drop(
         ['TransactionID', 'TransactionDT'], axis=1)
-    num_cols = numeric_df.columns
 
     return numeric_df
 
@@ -172,7 +170,9 @@ def lambda_handler(event, context):
         }
 
     num_df = getNumericVariables(raw_df)
-    scaler_payload = {"Input": json.dumps(num_df.to_numpy().tolist())}
+    scaler_data = {"Input": num_df.to_numpy().tolist()}
+
+    scaler_payload = json.dumps(scaler_data)
     # Scaling through SageMaker
     scaler_response = sagemakerRuntime.invoke_endpoint(EndpointName=SCALER_ENDPOINT_NAME,
                                                        ContentType='application/json',
@@ -189,7 +189,9 @@ def lambda_handler(event, context):
 
     refined_df = dropCorrelatedVariables(full_df)
 
-    estimator_payload = {"Input": json.dumps(refined_df.to_numpy().toList())}
+    estimator_data = {"Input": refined_df.to_numpy().tolist()}
+
+    estimator_payload = json.dumps(estimator_data)
     # Get predictions
     estimator_response = sagemakerRuntime.invoke_endpoint(EndpointName=ESTIMATOR_ENDPOINT_NAME,
                                                           ContentType='application/json',
@@ -199,11 +201,14 @@ def lambda_handler(event, context):
         estimator_response['Body'].read().decode())['Output']
 
     predictions = pd.concat(
-        [raw_df['TransactionID'], pd.DataFrame(estimator_result)], axis=1)
+        [raw_df['TransactionID'], pd.DataFrame(estimator_result, columns=['isFraud'])], axis=1)
 
-    predictions.to_csv(f'/tmp/{unique_id}predictions.csv')
+    filename = f'{unique_id}predictions.csv'
+    predictions.to_csv(f'/tmp/{filename}')
+
+    bucket.upload_file(f'/tmp/{filename}', f'output/{filename}')
 
     return {
-        'statusCode': 200,
+        'statusCode': 202,
         'body': json.dumps('Predictions saved in bucket')
     }

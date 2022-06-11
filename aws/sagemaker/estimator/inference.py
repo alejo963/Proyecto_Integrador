@@ -38,6 +38,6 @@ output_fn
 """
 
 def output_fn(prediction, content_type):
-    res = int(prediction[0])
+    res = prediction.tolist()
     respJSON = {'Output': res}
     return respJSON

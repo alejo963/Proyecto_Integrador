@@ -30,8 +30,7 @@ final_cols = ['id_01', 'id_02', 'id_05', 'id_06', 'id_19', 'id_20', 'Transaction
 
 
 class TestMetricsDataHandler(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         warnings.simplefilter("ignore", ResourceWarning)
         try:
             os.mkdir('./tmp')
@@ -58,8 +57,22 @@ class TestMetricsDataHandler(unittest.TestCase):
         refined_df = predict_handler.dropCorrelatedVariables(full_df)
         self.assertTrue(((refined_df.columns == final_cols).all()))
 
-    @classmethod
-    def tearDownClass(cls):
+    def test_handler(self):
+        event = {
+            "Records": [
+                {
+                    "s3": {
+                        "object": {
+                            "key": "raw/test.zip",
+                        }
+                    }
+                }
+            ]
+        }
+        response = predict_handler.lambda_handler(event, {})
+        self.assertEqual(response['statusCode'], 202)
+
+    def tearDown(self):
         shutil.rmtree('./tmp')
 
 
